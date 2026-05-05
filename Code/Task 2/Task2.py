@@ -16,14 +16,14 @@ triggerMode = input("Recording mode (manual, auto): ")
 
 
 def save_files(fileType, data):
-    if fileType.lower == "wav":
+    if fileType.lower() == "wav":
         with wave.open(f"E12_{SAMPLE_RATE}Hz_audio.wav", 'wb') as wf:
             wf.setnchannels(1)
             wf.setsampwidth(1)  # 8-bit
             wf.setframerate(SAMPLE_RATE)
             wf.writeframes(data.tobytes())
 
-    elif fileType.lower == "png":
+    elif fileType.lower() == "png":
         np.linspace(0, 5)
 
         plt.plot(data, recordingTime)
@@ -33,7 +33,7 @@ def save_files(fileType, data):
         plt.title("Amplitude vs Time")
         plt.savefig(f"E12_{SAMPLE_RATE}Hz_image.png")
 
-    elif fileType.lower == "csv":
+    elif fileType.lower() == "csv":
 
         with open(f"E12_{SAMPLE_RATE}Hz_data.csv", "w") as file:
             file.write(f"{SAMPLE_RATE}\n")
@@ -42,7 +42,7 @@ def save_files(fileType, data):
 
 print("START")
 
-if triggerMode.lower == "auto":
+if triggerMode.lower() == "auto":
 
     recordingTime = eval(input("Recording Length (s): "))
 
