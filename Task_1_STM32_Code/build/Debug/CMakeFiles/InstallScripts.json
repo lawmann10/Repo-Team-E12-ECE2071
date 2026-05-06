@@ -1,0 +1,8 @@
+{
+	"InstallScripts" : 
+	[
+		"C:/Users/ranem/OneDrive/Documents/GitHub/Team-E12-ECE2071/Task_1_STM32_Code/build/Debug/cmake_install.cmake",
+		"C:/Users/ranem/OneDrive/Documents/GitHub/Team-E12-ECE2071/Task_1_STM32_Code/build/Debug/cmake/stm32cubemx/cmake_install.cmake"
+	],
+	"Parallel" : false
+}
