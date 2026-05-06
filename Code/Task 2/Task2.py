@@ -12,7 +12,7 @@ audio = bytearray()
  
 SAMPLE_RATE = 11000
 
-triggerMode = input("Recording mode (manual, auto): ") # 2 input modes are manual and auto
+triggerMode = input("Recording mode (Manual, Distance Trigger): ") # 2 input modes are manual and auto
 
 
 def save_files(fileType, data): #function to determine output
@@ -26,7 +26,8 @@ def save_files(fileType, data): #function to determine output
     elif fileType.lower() == "png":
         np.linspace(0, 5)
 
-        plt.plot(data, recordingTime)
+        time_axis = np.linspace(0, len(data) / SAMPLE_RATE, len(data))
+        plt.plot(time_axis, data)
 
         plt.xlabel("Time (s)")
         plt.ylabel("Amplitude")
@@ -37,52 +38,52 @@ def save_files(fileType, data): #function to determine output
 
         with open(f"E12_{SAMPLE_RATE}Hz_data.csv", "w") as file:
             file.write(f"{SAMPLE_RATE}\n")
-            file.write(data)
+            np.savetxt(file, data, delimiter=",", fmt="%d")
 
 
 print("START")
 
-if triggerMode.lower() == "auto":
+if triggerMode.lower() == "manual":
 
     recordingTime = eval(input("Recording Length (s): "))
 
-    for i in range(recordingTime * SAMPLE_RATE):
+    for i in range(int(recordingTime * SAMPLE_RATE)):
         data = ser.read(1)
         if data:
             audio.append(data[0])
 
+    //save_files
     data = np.array(audio, dtype=np.uint8)
 
     outputType = input("Choose an Output Option (wav, png, csv): ")
 
     save_files(outputType, data)
 
-elif triggerMode == "manual":
+elif triggerMode.lower() == "distance trigger":
 
     recording = False
     noise_count = 0
     audio = bytearray()
+    print("Waiting for proximity trigger...")
+    
+    while ser.in_waiting == 0: #if no bytes are waiting, do nothing
+        pass
 
-    while distance_mode:
-        
-        dist = distance_Stm()
+    print("recording...")
 
-        if dist <= 10:
-            recording = True
-            noise_count = 0
-        else:
-            noise_count += 1
-
-        if recording:
-            data = ser.read(ser.in_waiting)
-            audio.extend(data)
-
-        if noise_count > 20:
-            recording = False
-            outputType = input("Choose an Output Option (wav, png, csv): ")
-            save_files(outputType, audio)
+    while True:
+        byte = ser.read(1)
+        if byte == b'\xff':  # stop byte received
             break
+        audio.append(byte[0])
 
+    #save files
+    data = np.array(audio, dtype=np.uint8)
+
+    outputType = input("Choose an Output Option (wav, png, csv): ")
+
+    save_files(outputType, data)
+       
     print("DONE")
 
 

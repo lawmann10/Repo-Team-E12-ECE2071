@@ -141,6 +141,8 @@ int main(void)
   {
       // OBJECT REMOVED: Flip the switch to OFF only after it clears 15cm
       is_recording = 0;
+      uint8_t stop_byte = 0xFF;
+      HAL_UART_Transmit(&huart2, &stop_byte, 1, HAL_MAX_DELAY); // if we were recording, and move to far, send stop byte
   }
 
   /* Transfer audio if within range */
@@ -156,17 +158,10 @@ int main(void)
       }
       // No Delay here: Maintain high sample rate!
   } 
-  else 
+  else
   {
-    /* Idling / not recording*/
-
-    /* Send over UART to Python */
-    char buffer[32];
-    sprintf(buffer, "%lu\r\n", distance_cm); /*formats our distance as a character array (buffer)*/
-    HAL_UART_Transmit(&huart2, (uint8_t*)buffer, strlen(buffer), HAL_MAX_DELAY); /*strlen() tells us how many byte we need, 1 character = 1 byte*/
-
     /* Wait 60ms between readings */
-    HAL_Delay(60);
+    HAL_Delay(60); //once stop byte sent, we go back to sampling every 60ms
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
