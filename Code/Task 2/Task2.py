@@ -3,7 +3,8 @@ import wave
 import serial
 import matplotlib.pyplot as plt
 
-COM = "COM6"
+# COM = "COM6"
+COM = "/dev/tty.usbmodem103"
 baudrate = 115200
 
 ser = serial.Serial(COM, baudrate, timeout=1)
