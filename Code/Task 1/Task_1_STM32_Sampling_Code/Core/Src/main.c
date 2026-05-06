@@ -107,7 +107,7 @@ int main(void)
     HAL_ADC_PollForConversion(&hadc1, HAL_MAX_DELAY);
     audio_buffer = HAL_ADC_GetValue(&hadc1);
     HAL_GPIO_WritePin(GPIOA, GPIO_PIN_8, 0);
-    HAL_UART_Transmit(&huart2, &audio_buffer, 1, HAL_MAX_DELAY);
+    HAL_UART_Transmit(&huart1, &audio_buffer, 1, HAL_MAX_DELAY);
 
     /* USER CODE END WHILE */
 
