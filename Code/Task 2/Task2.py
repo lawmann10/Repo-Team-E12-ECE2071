@@ -52,7 +52,7 @@ if triggerMode.lower() == "manual":
         if data:
             audio.append(data[0])
 
-    //save_files
+    #save_files
     data = np.array(audio, dtype=np.uint8)
 
     outputType = input("Choose an Output Option (wav, png, csv): ")
