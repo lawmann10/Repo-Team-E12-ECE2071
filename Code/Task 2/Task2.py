@@ -12,10 +12,10 @@ audio = bytearray()
  
 SAMPLE_RATE = 11000
 
-triggerMode = input("Recording mode (manual, auto): ")
+triggerMode = input("Recording mode (manual, auto): ") # 2 input modes are manual and auto
 
 
-def save_files(fileType, data):
+def save_files(fileType, data): #function to determine output
     if fileType.lower() == "wav":
         with wave.open(f"E12_{SAMPLE_RATE}Hz_audio.wav", 'wb') as wf:
             wf.setnchannels(1)
