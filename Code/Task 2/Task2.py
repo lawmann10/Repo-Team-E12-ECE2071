@@ -45,6 +45,8 @@ print("START")
 
 if triggerMode.lower() == "manual":
 
+    ser.write(b'M') #sends byte to processing STM to trigger "manual code"
+
     recordingTime = eval(input("Recording Length (s): "))
 
     for i in range(int(recordingTime * SAMPLE_RATE)):
@@ -61,8 +63,8 @@ if triggerMode.lower() == "manual":
 
 elif triggerMode.lower() == "distance trigger":
 
-    recording = False
-    noise_count = 0
+    ser.write(b'D')
+    
     audio = bytearray()
     print("Waiting for proximity trigger...")
     
