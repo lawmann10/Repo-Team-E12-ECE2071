@@ -2,6 +2,7 @@ import numpy as np
 import wave
 import serial
 import matplotlib.pyplot as plt
+import time
 
 # COM = "COM6"
 COM = "/dev/tty.usbmodem103"
@@ -9,7 +10,7 @@ baudrate = 115200
 
 ser = serial.Serial(COM, baudrate, timeout=1)
 
-SAMPLE_RATE = 11520  # 115200 baud / 10 bits per byte = 11520 sps
+SAMPLE_RATE = 10000  
 
 def save_files(fileType, data): #function to determine output
     if fileType.lower() == "wav":
@@ -43,18 +44,25 @@ while True:
         break
 
     elif triggerMode.lower() == "manual":
-        ser.write(b'M') #sends byte to processing STM to trigger "manual code"
-
+        #ser.write(b'M') #sends byte to processing STM to trigger "manual code"
         audio = bytearray()  # reset audio each recording
         recordingTime = float(input("Recording Length (s): "))
 
-        for i in range(int(recordingTime * SAMPLE_RATE)):
-            data = ser.read(1)
-            if data:
-                audio.append(data[0])
+        print("Hewwo UwU")
+        start = time.time()
+        sample = 0
+        while time.time() - start < 5:
+            sample = ser.read(1)
+            if sample:
+                audio.append(sample[0])
 
+        print(len(audio))
         # save files
-        data = np.array(audio, dtype=np.uint8)
+        data = np.array(audio)
+        data = (data-data.min())/data.max()
+        data = data*255
+        data = data.astype(np.uint8)
+        print(len(data))
         outputType = input("Choose an Output Option (wav, png, csv): ")
         save_files(outputType, data)
 

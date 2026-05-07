@@ -23,6 +23,7 @@
 /* USER CODE BEGIN Includes */
 #include <stdio.h>
 #include <string.h>
+#include <math.h>
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -41,9 +42,10 @@
 /* USER CODE END PM */
 
 /* Private variables ---------------------------------------------------------*/
+SPI_HandleTypeDef hspi1;
+
 TIM_HandleTypeDef htim16;
 
-UART_HandleTypeDef huart1;
 UART_HandleTypeDef huart2;
 
 /* USER CODE BEGIN PV */
@@ -54,8 +56,8 @@ UART_HandleTypeDef huart2;
 void SystemClock_Config(void);
 static void MX_GPIO_Init(void);
 static void MX_TIM16_Init(void);
-static void MX_USART1_UART_Init(void);
 static void MX_USART2_UART_Init(void);
+static void MX_SPI1_Init(void);
 /* USER CODE BEGIN PFP */
 
 /* USER CODE END PFP */
@@ -95,100 +97,31 @@ int main(void)
   /* Initialize all configured peripherals */
   MX_GPIO_Init();
   MX_TIM16_Init();
-  MX_USART1_UART_Init();
   MX_USART2_UART_Init();
+  MX_SPI1_Init();
   /* USER CODE BEGIN 2 */
-  HAL_TIM_Base_Start(&htim16);
-  uint8_t is_recording = 0;
-  uint8_t prev_byte = 0;
-  uint8_t mode = 0;
-  uint32_t distance_cm = 0;
-  HAL_UART_Receive(&huart2, &mode, 1, HAL_MAX_DELAY);
   /* USER CODE END 2 */
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
+  uint8_t buf[3];
+  buf[0] = 0;
+  buf[1] = 0;
+  uint8_t mean[1];
   while (1)
-{
-    // Check if Python has sent a new mode
-    uint8_t new_mode;
-    if (HAL_UART_Receive(&huart2, &new_mode, 1, 1) == HAL_OK)
-    {
-        mode = new_mode;
-    }
-
-    if (mode == 'M')
-    {
-        uint8_t raw_byte;
-        if (HAL_UART_Receive(&huart1, &raw_byte, 1, 5) == HAL_OK)
-        {
-            uint8_t filtered = (raw_byte + prev_byte) / 2;
-            prev_byte = raw_byte;
-            HAL_UART_Transmit(&huart2, &filtered, 1, HAL_MAX_DELAY);
-        }
-        else
-        {
-            uint8_t silence = 128;
-            HAL_UART_Transmit(&huart2, &silence, 1, HAL_MAX_DELAY);
-        }
-    }
-    else if (mode == 'D')
-    {
-        // Trigger pulse - 10µs
-        HAL_GPIO_WritePin(TRIG_GPIO_Port, TRIG_Pin, 1);
-        __HAL_TIM_SET_COUNTER(&htim16, 0);
-        while (__HAL_TIM_GET_COUNTER(&htim16) < 10);
-        HAL_GPIO_WritePin(TRIG_GPIO_Port, TRIG_Pin, 0);
-
-        // Wait for ECHO to go HIGH
-        __HAL_TIM_SET_COUNTER(&htim16, 0);
-        while (HAL_GPIO_ReadPin(ECHO_GPIO_Port, ECHO_Pin) == 0)
-        {
-            if (__HAL_TIM_GET_COUNTER(&htim16) > 30000) break;
-        }
-
-        // Measure echo pulse width
-        __HAL_TIM_SET_COUNTER(&htim16, 0);
-        while (HAL_GPIO_ReadPin(ECHO_GPIO_Port, ECHO_Pin) == 1)
-        {
-            if (__HAL_TIM_GET_COUNTER(&htim16) > 38000) break;
-        }
-        uint32_t echo_time = __HAL_TIM_GET_COUNTER(&htim16);
-        distance_cm = echo_time / 58;
-
-        // Schmitt trigger for debouncing
-        if (!is_recording && distance_cm <= 10)
-        {
-            is_recording = 1;
-        }
-        else if (is_recording && distance_cm > 15)
-        {
-            is_recording = 0;
-            uint8_t stop_byte = 0xFF;
-            HAL_UART_Transmit(&huart2, &stop_byte, 1, HAL_MAX_DELAY);
-        }
-
-        // Transfer audio if within range
-        if (is_recording)
-        {
-            uint8_t raw_audio_byte;
-            if (HAL_UART_Receive(&huart1, &raw_audio_byte, 1, 5) == HAL_OK)
-            {
-                uint8_t filtered = (raw_audio_byte + prev_byte) / 2;
-                prev_byte = raw_audio_byte;
-                HAL_UART_Transmit(&huart2, &filtered, 1, HAL_MAX_DELAY);
-            }
-        }
-        else
-        {
-            HAL_Delay(60);
-        }
+  {
+    if (HAL_SPI_Receive(&hspi1, &buf[2], 1,   10) == HAL_OK){
+      buf[0] = buf[1];
+      buf[1] = buf[2];
+       mean[0] = (buf[1]+buf[0])/2;
+       HAL_UART_Transmit(&huart2, &mean[0], 1, 0.2);
+       //HAL_GPIO_TogglePin(LD3_GPIO_Port, LD3_Pin);
     }
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
-}
-/* USER CODE END 3 */
+  }
+  /* USER CODE END 3 */
 }
 
 /**
@@ -213,7 +146,7 @@ void SystemClock_Config(void)
   RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_MSI;
   RCC_OscInitStruct.MSIState = RCC_MSI_ON;
   RCC_OscInitStruct.MSICalibrationValue = 0;
-  RCC_OscInitStruct.MSIClockRange = RCC_MSIRANGE_6;
+  RCC_OscInitStruct.MSIClockRange = RCC_MSIRANGE_10;
   RCC_OscInitStruct.PLL.PLLState = RCC_PLL_NONE;
   if (HAL_RCC_OscConfig(&RCC_OscInitStruct) != HAL_OK)
   {
@@ -229,10 +162,49 @@ void SystemClock_Config(void)
   RCC_ClkInitStruct.APB1CLKDivider = RCC_HCLK_DIV1;
   RCC_ClkInitStruct.APB2CLKDivider = RCC_HCLK_DIV1;
 
-  if (HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_0) != HAL_OK)
+  if (HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_1) != HAL_OK)
   {
     Error_Handler();
   }
+}
+
+/**
+  * @brief SPI1 Initialization Function
+  * @param None
+  * @retval None
+  */
+static void MX_SPI1_Init(void)
+{
+
+  /* USER CODE BEGIN SPI1_Init 0 */
+
+  /* USER CODE END SPI1_Init 0 */
+
+  /* USER CODE BEGIN SPI1_Init 1 */
+
+  /* USER CODE END SPI1_Init 1 */
+  /* SPI1 parameter configuration*/
+  hspi1.Instance = SPI1;
+  hspi1.Init.Mode = SPI_MODE_SLAVE;
+  hspi1.Init.Direction = SPI_DIRECTION_2LINES_RXONLY;
+  hspi1.Init.DataSize = SPI_DATASIZE_8BIT;
+  hspi1.Init.CLKPolarity = SPI_POLARITY_LOW;
+  hspi1.Init.CLKPhase = SPI_PHASE_1EDGE;
+  hspi1.Init.NSS = SPI_NSS_SOFT;
+  hspi1.Init.FirstBit = SPI_FIRSTBIT_MSB;
+  hspi1.Init.TIMode = SPI_TIMODE_DISABLE;
+  hspi1.Init.CRCCalculation = SPI_CRCCALCULATION_DISABLE;
+  hspi1.Init.CRCPolynomial = 7;
+  hspi1.Init.CRCLength = SPI_CRC_LENGTH_DATASIZE;
+  hspi1.Init.NSSPMode = SPI_NSS_PULSE_DISABLE;
+  if (HAL_SPI_Init(&hspi1) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  /* USER CODE BEGIN SPI1_Init 2 */
+
+  /* USER CODE END SPI1_Init 2 */
+
 }
 
 /**
@@ -264,41 +236,6 @@ static void MX_TIM16_Init(void)
   /* USER CODE BEGIN TIM16_Init 2 */
 
   /* USER CODE END TIM16_Init 2 */
-
-}
-
-/**
-  * @brief USART1 Initialization Function
-  * @param None
-  * @retval None
-  */
-static void MX_USART1_UART_Init(void)
-{
-
-  /* USER CODE BEGIN USART1_Init 0 */
-
-  /* USER CODE END USART1_Init 0 */
-
-  /* USER CODE BEGIN USART1_Init 1 */
-
-  /* USER CODE END USART1_Init 1 */
-  huart1.Instance = USART1;
-  huart1.Init.BaudRate = 115200;
-  huart1.Init.WordLength = UART_WORDLENGTH_8B;
-  huart1.Init.StopBits = UART_STOPBITS_1;
-  huart1.Init.Parity = UART_PARITY_NONE;
-  huart1.Init.Mode = UART_MODE_TX_RX;
-  huart1.Init.HwFlowCtl = UART_HWCONTROL_NONE;
-  huart1.Init.OverSampling = UART_OVERSAMPLING_16;
-  huart1.Init.OneBitSampling = UART_ONE_BIT_SAMPLE_DISABLE;
-  huart1.AdvancedInit.AdvFeatureInit = UART_ADVFEATURE_NO_INIT;
-  if (HAL_UART_Init(&huart1) != HAL_OK)
-  {
-    Error_Handler();
-  }
-  /* USER CODE BEGIN USART1_Init 2 */
-
-  /* USER CODE END USART1_Init 2 */
 
 }
 
@@ -351,9 +288,13 @@ static void MX_GPIO_Init(void)
 
   /* GPIO Ports Clock Enable */
   __HAL_RCC_GPIOA_CLK_ENABLE();
+  __HAL_RCC_GPIOB_CLK_ENABLE();
 
   /*Configure GPIO pin Output Level */
   HAL_GPIO_WritePin(TRIG_GPIO_Port, TRIG_Pin, GPIO_PIN_RESET);
+
+  /*Configure GPIO pin Output Level */
+  HAL_GPIO_WritePin(LD3_GPIO_Port, LD3_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pin : TRIG_Pin */
   GPIO_InitStruct.Pin = TRIG_Pin;
@@ -367,6 +308,13 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   HAL_GPIO_Init(ECHO_GPIO_Port, &GPIO_InitStruct);
+
+  /*Configure GPIO pin : LD3_Pin */
+  GPIO_InitStruct.Pin = LD3_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+  HAL_GPIO_Init(LD3_GPIO_Port, &GPIO_InitStruct);
 
   /* USER CODE BEGIN MX_GPIO_Init_2 */
 
