@@ -64,10 +64,10 @@ static void MX_USART2_UART_Init(void);
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
-void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef *hadc){
-  uint8_t sample = HAL_ADC_GetValue(&hadc1);
-  HAL_UART_Transmit(&huart1, &sample, 1, 1);
-  HAL_GPIO_TogglePin(LD3_GPIO_Port, LD3_Pin);
+void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef *hadc){ //calls function everytime ADC conversion finishes
+  uint8_t sample = HAL_ADC_GetValue(&hadc1); //reads ADC register and stores audio info as 1 byte
+  HAL_UART_Transmit(&huart1, &sample, 1, 1); //Transmits it to processing STM
+  
  
 }
 /* USER CODE END 0 */
