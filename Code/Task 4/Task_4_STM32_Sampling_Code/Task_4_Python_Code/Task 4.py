@@ -6,19 +6,22 @@ import time
 
 # COM = "COM6"
 COM = "/dev/tty.usbmodem103"
-baudrate = 460800                   # Didnt use 230400 to give space for errors
-SAMPLE_RATE = 22050                # Changed to hold the higher sampling rate of to hold 22.05ksps 
+baudrate = 921600               # Highest allowed rate
+SAMPLE_RATE = 44100             # Changed to hold the higher sampling rate of to hold 44.1kspsp 
 Team_ID = "E12"
 
 ser = serial.Serial(COM, baudrate, timeout=1)
 
 
 def save_wav(data, filename): #function to save wav
+        # Change to 32-bit to stop overflow, then convert data from a max of 4095 to a max of 65535
+        data_16bit = (data.astype(np.uint32) * 65535 // 4095).astype(np.uint16)     # Scales the audio data to be 16-bit without the extra 4 bits
+        
         with wave.open(filename, 'wb') as wf:
             wf.setnchannels(1)
-            wf.setsampwidth(1)  # 8-bit doesnt need to change as STM should scale from 10 -> 8
+            wf.setsampwidth(2)  # 16-bit doesnt need to change as STM should scale from 10 -> 8
             wf.setframerate(SAMPLE_RATE)
-            wf.writeframes(data.tobytes())
+            wf.writeframes(data_16bit.tobytes())
         print(f"Saved: {filename}")
 
 def save_png(data, filename): #function to save png
@@ -27,8 +30,8 @@ def save_png(data, filename): #function to save png
     plt.plot(time_axis, data)
 
     plt.xlabel("Time (s)")
-    plt.ylabel("Amplitude (8-bit)")
-    plt.title(f"Audio Amplitude vs Time | {Team_ID} | {SAMPLE_RATE}Hz")
+    plt.ylabel("Amplitude (12-bit)")    # Updated to represent bit amount
+    plt.title(f"Audio Amplitude vs Time | {Team_ID} | {SAMPLE_RATE}Hz | 12-bit")    # Updated to represent bit amount
     plt.tight_layout()
     plt.savefig(filename)
     plt.close()
@@ -54,6 +57,21 @@ def save_files(output_types, data):
             save_csv(data, f"{base}.csv")
         else:
             print(f"Unknown format - {fmt}")
+
+def audio_fix(raw_bytes):
+    # Make sure that all byts have their pair to make 12-bits
+    if len(raw_bytes) % 2 != 0:
+        raw_bytes = raw_bytes[:-1]
+    
+    # Sort the bytes into pairs
+    """
+    NEED TO TEST
+    dtype >u2 means that the first byte sent is the larger number
+    dtype <u2 means that the first byte sent is the smaller number
+    """
+    data = np.frombuffer(raw_bytes, dtype='>u2')
+    data = data.astype(np.uint16)
+    return data
 
 def get_output_types():
     print("\n Available output types: wav, png, csv")
@@ -87,26 +105,30 @@ def manual_mode():
     time.sleep(0.1)
 
     print(f"\n Recording for {recording_time}s")
-    audio = bytearray()
+    raw = bytearray()
     start = time.time()
 
     while time.time() - start < recording_time:
-        chunk = ser.read(ser.in_waiting or 1)
+        chunk = ser.read(ser.in_waiting or 2)
         if chunk:
-            audio.extend(chunk)
+            raw.extend(chunk)
+
+    # Trim to even number of bytes
+    if len(raw) % 2 != 0:
+        raw = raw[:-1]
 
     """ Uncomment if we want to add stop byte stuff to stop the STM from clogging up otherwise we have to reset the STM for each recording"""
     # ser.write(b'S')
     # time.sleep(0.1)                   # Wait for STM to stop
     # ser.reset_input_buffer()          # Discards old/garbage bits to allow for clean back to back recordings
 
-    print(f"Captured {len(audio)} Samples")
+    print(f"Captured {len(raw) // 2} Samples")
 
-    if len(audio) == 0:
+    if len(raw) == 0:
         print("No data received")
         return
     
-    data = np.array(audio, dtype= np.uint8)
+    data = audio_fix(raw)
     save_files(output_types, data)
 
 def distance_mode():
@@ -118,7 +140,7 @@ def distance_mode():
 
     try:
         while True:
-            audio = bytearray()
+            raw = bytearray()
             ser.write(b'D')                 # Set STM to distance Mode  
             print("Waiting for trigger")
 
@@ -138,15 +160,18 @@ def distance_mode():
                 if byte == b'\xff':
                     break
 
-                audio.append(byte[0])
+                raw.append(byte[0])
 
-            print(f"Recording Stopped. Captured {len(audio)} Samples")
+            if len(raw) % 2 != 0:
+                raw = raw[:-1]
 
-            if len(audio) == 0:
+            print(f"Recording Stopped. Captured {len(raw) // 2} Samples")
+
+            if len(raw) == 0:
                 print("No audio Data")
                 continue
 
-            data = np.array(audio, dtype = np.uint8)
+            data = audio_fix(raw)
             save_files(output_types, data)
 
     except KeyboardInterrupt:
