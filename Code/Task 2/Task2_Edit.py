@@ -95,9 +95,9 @@ def manual_mode():
             audio.extend(chunk)
 
     """ Uncomment if we want to add stop byte stuff to stop the STM from clogging up otherwise we have to reset the STM for each recording"""
-    # ser.write(b'S')
-    # time.sleep(0.1)                   # Wait for STM to stop
-    # ser.reset_input_buffer()          # Discards old/garbage bits to allow for clean back to back recordings
+    ser.write(b'S')
+    time.sleep(0.1)                   # Wait for STM to stop
+    ser.reset_input_buffer()          # Discards old/garbage bits to allow for clean back to back recordings
 
     print(f"Captured {len(audio)} Samples")
 
@@ -150,9 +150,9 @@ def distance_mode():
 
     except KeyboardInterrupt:
         """ Uncomment if we want to add stop byte stuff to stop the STM from clogging up otherwise we have to reset the STM for each recording"""
-        # ser.write(b'S')
-        # time.sleep(0.1)                   # Wait for STM to stop
-        # ser.reset_input_buffer()          # Discards old/garbage bits to allow for clean back to back recordings
+        ser.write(b'S')
+        time.sleep(0.1)                   # Wait for STM to stop
+        ser.reset_input_buffer()          # Discards old/garbage bits to allow for clean back to back recordings
         print('\n Ending Distance Trigger Mode')
 
 print_help()
