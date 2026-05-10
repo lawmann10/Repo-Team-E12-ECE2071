@@ -9,8 +9,8 @@ baudrate = 115200
 
 ser = serial.Serial(COM, baudrate, timeout=1) #initialises spped
 
-SAMPLE_RATE = 9173 #tells the wav file how quickly to playback audiobytes
-recordingTime = 5 #hardcodes recording time
+SAMPLE_RATE = 9708 #tells the wav file how quickly to playback audiobytes
+recordingTime = 10 #hardcodes recording time
 
 print("START")
 audio = bytearray()
