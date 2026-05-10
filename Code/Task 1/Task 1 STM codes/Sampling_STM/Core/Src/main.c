@@ -64,12 +64,13 @@ static void MX_USART2_UART_Init(void);
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
-void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef *hadc){ //calls function everytime ADC conversion finishes
-uint8_t sample = HAL_ADC_GetValue(&hadc1); //reads ADC register and stores audio info as 1 byte
-HAL_UART_Transmit(&huart1, &sample, 1, 1); //Transmits it to processing STM
-  
- 
+void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef *hadc){
+    uint8_t sample = HAL_ADC_GetValue(&hadc1);
+    HAL_UART_Transmit(&huart1, &sample, 1, 1);
+    HAL_ADC_Start_IT(&hadc1);   // restart for next conversion
 }
+  
+
 /* USER CODE END 0 */
 
 /**
@@ -244,7 +245,7 @@ static void MX_TIM1_Init(void)
   htim1.Instance = TIM1;
   htim1.Init.Prescaler = 31;
   htim1.Init.CounterMode = TIM_COUNTERMODE_UP;
-  htim1.Init.Period = 102;
+  htim1.Init.Period = 109;
   htim1.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
   htim1.Init.RepetitionCounter = 0;
   htim1.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;

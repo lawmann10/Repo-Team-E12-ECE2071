@@ -5,11 +5,11 @@ import time
 
 #COM = "COM6"
 COM = "/dev/tty.usbmodem103"
-baudrate = 921600
+baudrate = 115200
 
 ser = serial.Serial(COM, baudrate, timeout=1) #initialises spped
 
-SAMPLE_RATE = 22050 #tells the wav file how quickly to playback audiobytes
+SAMPLE_RATE = 9090 #tells the wav file how quickly to playback audiobytes
 recordingTime = 5 #hardcodes recording time
 
 print("START")
