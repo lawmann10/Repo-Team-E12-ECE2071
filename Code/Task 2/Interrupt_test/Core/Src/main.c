@@ -26,7 +26,8 @@ UART_HandleTypeDef huart1;
 UART_HandleTypeDef huart2;
 
 /* USER CODE BEGIN PV */
-uint8_t rxData;
+uint8_t rx_byte = 0;
+volatile uint8_t rx_flag = 0;
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -44,8 +45,8 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 {
     if (huart->Instance == USART2)
     {
-        HAL_UART_Transmit(&huart2, &rxData, 1, HAL_MAX_DELAY);
-        HAL_UART_Receive_IT(&huart2, &rxData, 1);
+        rx_flag = 1; // Signal the main loop
+        // We don't re-enable here to keep it simple; we'll do it in main.
     }
 }
 /* USER CODE END 0 */
@@ -56,39 +57,51 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
   */
 int main(void)
 {
-
-  /* USER CODE BEGIN 1 */
-  /* USER CODE END 1 */
-
-  /* MCU Configuration--------------------------------------------------------*/
-
-  /* Reset of all peripherals, Initializes the Flash interface and the Systick. */
   HAL_Init();
-
-  /* USER CODE BEGIN Init */
-  /* USER CODE END Init */
-
-  /* Configure the system clock */
   SystemClock_Config();
-
-  /* USER CODE BEGIN SysInit */
-  /* USER CODE END SysInit */
-
-  /* Initialize all configured peripherals */
   MX_GPIO_Init();
-  MX_TIM16_Init();
-  MX_USART1_UART_Init();
-  MX_USART2_UART_Init();
+  MX_USART2_UART_Init(); // This is the most important one for now
+
   /* USER CODE BEGIN 2 */
-   HAL_UART_Receive_IT(&huart2, &rxData, 1);
+  // 1. Send a "Hello" message to prove TX works
+  uint8_t msg[] = "Square One: Type a character!\r\n";
+  HAL_UART_Transmit(&huart2, msg, sizeof(msg)-1, 100);
+
+  // 2. Start the first Interrupt Reception
+  HAL_UART_Receive_IT(&huart2, &rx_byte, 1);
   /* USER CODE END 2 */
 
-  /* Infinite loop */
-  /* USER CODE BEGIN WHILE */
-    /* USER CODE END WHILE */
+  while (1)
+  {
+    // Check if the interrupt flag was set
+    if (rx_flag)
+    {
+        rx_flag = 0; // Clear the flag
 
-    /* USER CODE BEGIN 3 */
-  /* USER CODE END 3 */
+        // ECHO: Send back what we received inside brackets
+        uint8_t echo_prefix[] = "I heard: [";
+        uint8_t echo_suffix[] = "]\r\n";
+        
+        HAL_UART_Transmit(&huart2, echo_prefix, sizeof(echo_prefix)-1, 10);
+        HAL_UART_Transmit(&huart2, &rx_byte, 1, 10);
+        HAL_UART_Transmit(&huart2, echo_suffix, sizeof(echo_suffix)-1, 10);
+
+        // Logic test: If you type 'M', do something special
+        if (rx_byte == 'M') {
+            uint8_t m_msg[] = "Mode M Activated!\r\n";
+            HAL_UART_Transmit(&huart2, m_msg, sizeof(m_msg)-1, 10);
+        }
+
+        // 3. IMPORTANT: Re-enable the interrupt for the NEXT character
+        HAL_UART_Receive_IT(&huart2, &rx_byte, 1);
+    }
+
+    // Safety: If the UART locks up due to noise, clear it
+    if (__HAL_UART_GET_FLAG(&huart2, UART_FLAG_ORE)) {
+        __HAL_UART_CLEAR_FLAG(&huart2, UART_CLEAR_OREF);
+        HAL_UART_Receive_IT(&huart2, &rx_byte, 1);
+    }
+  }
 }
 
 /**
