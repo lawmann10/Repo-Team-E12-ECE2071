@@ -82,8 +82,12 @@ def manual_mode():
     output_types = get_output_types()
 
     # Tell STM it is in Manual and give time for switch
-    ser.write(b'M')
     time.sleep(0.1)
+    ser.write(b'M')
+    time.sleep(0.2)
+    """ Add these lines back in if its still not working to check what the STM is receiving"""
+    # echo = ser.read(1)
+    # print(f"STM echoed {echo}") # This should print an M or first audio byte if it works 
 
     print(f"\n Recording for {recording_time}s")
     audio = bytearray()
@@ -114,11 +118,11 @@ def distance_mode():
     print("  The system will record automatically when an object is detected within 10cm.")
     print("  Press Ctrl+C to return to the main menu.\n")
 
+    ser.write(b'D')                 # Set STM to distance Mode  
 
     try:
         while True:
             audio = bytearray()
-            ser.write(b'D')                 # Set STM to distance Mode  
             print("Waiting for trigger")
 
             # When something is detected

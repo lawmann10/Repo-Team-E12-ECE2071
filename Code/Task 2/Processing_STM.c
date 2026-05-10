@@ -131,7 +131,7 @@ int main(void)
                 
                 // Flushes any old bits from sampling STM 
                 uint8_t flush;
-                while (HAL_UART_Receive(&huart1, &flush, 1,  1) == HAL_OK);
+                while (HAL_UART_Receive(&huart1, &flush, 1,  5) == HAL_OK);
             }
         }
         continue;   // Restart loop - either re-check for mode, or begin using newly set mode
@@ -142,14 +142,16 @@ int main(void)
         uint8_t cmd = 0;
 
         if (HAL_UART_Receive(&huart2, &cmd, 1, 0) == HAL_OK){
-            if (cmd == 'S'){
-                // Change mode to waiting
-                mode = 0;
+          // Check for all valid commands in case command is sent during this block of code  
+          if (cmd == 'S' || cmd == 'M' || cmd == 'D'){
+                // Change mode to waiting if 'S' otherwise set to the specified mode
+                mode = (cmd == 'S') ? 0: cmd;
                 is_recording = 0;
-                
+              
                 // Flush sampling STM
                 uint8_t flush;
-                while (HAL_UART_Receive(&huart1, &flush, 1,  1) == HAL_OK);
+                while (HAL_UART_Receive(&huart1, &flush, 1,  5) == HAL_OK);
+                buf[0] = 128; buf[1] = 128;                                 // Reset moving average filter
                 continue;
 
             }
@@ -211,7 +213,7 @@ int main(void)
 
     // Flush bits to ensure clean recording
     uint8_t flush;
-    while (HAL_UART_Receive(&huart1, &flush, 1,  1) == HAL_OK);
+    while (HAL_UART_Receive(&huart1, &flush, 1,  5) == HAL_OK);
 
     // Reset moving average filter
     buf[0] = 128;
