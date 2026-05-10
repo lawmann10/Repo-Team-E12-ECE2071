@@ -99,16 +99,26 @@ int main(void)
   MX_USART2_UART_Init();
   MX_USART1_UART_Init();
   /* USER CODE BEGIN 2 */
-  uint8_t buf[3]; // buffer of length 3
-  buf[0] = 128;
-  buf[1] = 128; // initialise at 128 for smoother start
-  uint8_t mean; // initialise mean
+ uint8_t buf[2];
+buf[0] = 128;
+buf[1] = 128;
+uint8_t mean;
   /* USER CODE END 2 */
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
   while (1)
   {
+    uint8_t sample;
+if (HAL_UART_Receive(&huart1, &sample, 1, 1) == HAL_OK)
+{
+    buf[1] = buf[0];
+    buf[0] = sample;
+
+    mean = (buf[0] + buf[1]) / 2;
+
+    HAL_UART_Transmit(&huart2, &mean, 1, 1);
+}
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */

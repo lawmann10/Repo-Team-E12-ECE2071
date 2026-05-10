@@ -9,8 +9,8 @@ baudrate = 115200
 
 ser = serial.Serial(COM, baudrate, timeout=1) #initialises spped
 
-SAMPLE_RATE = 9708 #tells the wav file how quickly to playback audiobytes
-recordingTime = 10 #hardcodes recording time
+SAMPLE_RATE = 9090 #tells the wav file how quickly to playback audiobytes
+recordingTime = 5 #hardcodes recording time
 
 print("START")
 audio = bytearray()
@@ -19,9 +19,10 @@ start = time.time() #records start time,
 while time.time() - start < recordingTime: #allows us to read byte by byte, compared to ser.read which does it all at once
     sample = ser.read(1)
     if len(sample)>0:
+        print(sample[0])
         audio.append(sample[0])
        
-
+       
 data = np.array(audio)
 data = (data - data.min()) #removes DC offset
 if data.max() > 0:  #stop zero division
