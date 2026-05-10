@@ -1,4 +1,4 @@
-/* USER CODE BEGIN Header */
+﻿/* USER CODE BEGIN Header */
 /**
   ******************************************************************************
   * @file           : main.c
@@ -51,6 +51,7 @@ UART_HandleTypeDef huart2;
 /* USER CODE BEGIN PV */
 static uint8_t mode = 0;                // 0 = Waiting, M = Manual, D = Distance
 static uint8_t is_recording = 0;        // Only required for distance
+static uint8_t distance_threshold = 10; // Detection threshold in cm (default 10)
 
 static uint8_t buf[3] = {128, 128, 0};  // Moving Average Filter (Taken from Task 1)
 static uint8_t mean = 128;
@@ -125,11 +126,21 @@ int main(void)
                 // Reset to defaults at start of new recording
                 mode = cmd;
                 is_recording = 0;
-                
+
+                // For distance mode, read the threshold byte sent by Python
+                if (cmd == 'D') {
+                    uint8_t thresh = 10;
+                    if (HAL_UART_Receive(&huart2, &thresh, 1, 200) == HAL_OK) {
+                        distance_threshold = thresh;
+                    } else {
+                        distance_threshold = 10; // fallback to default
+                    }
+                }
+
                 buf[0] = 128;
                 buf[1] = 128;
-                
-                // Flushes any old bits from sampling STM 
+
+                // Flushes any old bits from sampling STM
                 uint8_t flush;
                 while (HAL_UART_Receive(&huart1, &flush, 1,  1) == HAL_OK);
             }
@@ -204,7 +215,7 @@ int main(void)
     uint32_t distance_cm = echo_time / 58;
     
   /* Schmitt trigger - state check */
-  if (!is_recording && distance_cm <= 10) 
+  if (!is_recording && distance_cm <= distance_threshold) 
   {
     // OBJECT DETECTED: Flip the switch to ON
     is_recording = 1;
@@ -217,7 +228,7 @@ int main(void)
     buf[0] = 128;
     buf[1] = 128;
   } 
-  else if (is_recording && distance_cm > 15) 
+  else if (is_recording && distance_cm > (distance_threshold + 5)) 
   {
       // OBJECT REMOVED: Flip the switch to OFF only after it clears 15cm
       is_recording = 0;

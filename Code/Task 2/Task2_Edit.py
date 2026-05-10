@@ -1,4 +1,4 @@
-import numpy as np
+﻿import numpy as np
 import wave
 import serial
 import matplotlib.pyplot as plt
@@ -61,16 +61,33 @@ def get_output_types():
 
 def print_help():
     print("""
-            ECE2071 Audio Recorder - CLI Help
-            Modes:
-            manual      -   Record for a user-specified time
+    ============================================================
+     ECE2071 Audio Recorder  |  Team E12  |  CLI Help
+    ============================================================
+     Modes:
+       manual    - Manually record for a user-specified duration.
+                   You will be prompted for:
+                     > Recording length (seconds)
+                     > Output format(s): wav, png, csv
 
-            distance    -   Proximity triggered recording (~10cm)
-                            Runs continuosly until exited
-            
-            help        -   Print this message
-            quit        - Exits the program
-          """)
+       distance  - Proximity-triggered recording.
+                   Recording starts automatically when an object
+                   is detected within your chosen distance, and
+                   stops once the object moves away.
+                   You will be prompted for:
+                     > Detection distance threshold (cm)
+                     > Output format(s): wav, png, csv
+                   Press Ctrl+C to return to the main menu.
+
+       help      - Show this help message.
+       quit      - Close the program and release the serial port.
+    ============================================================
+     Output formats:
+       wav  - Playable audio file
+       png  - Amplitude vs Time waveform plot
+       csv  - Raw sample data (first row = sample rate)
+    ============================================================
+    """)
     
 def manual_mode():
     try:
@@ -109,16 +126,23 @@ def manual_mode():
     save_files(output_types, data)
 
 def distance_mode():
-    output_types = get_output_types()
-    print("\n  Distance Trigger Mode active.")
-    print("  The system will record automatically when an object is detected within 10cm.")
-    print("  Press Ctrl+C to return to the main menu.\n")
+    try:
+        threshold = int(input("  Detection distance threshold (cm, default 10): ").strip() or "10")
+        threshold = max(1, min(threshold, 255))
+    except ValueError:
+        print("  Invalid input, using default of 10cm.")
+        threshold = 10
 
+    output_types = get_output_types()
+    print(f"\n  Distance Trigger Mode active (threshold: {threshold}cm).")
+    print("  Recording starts automatically when an object is detected.")
+    print("  Press Ctrl+C to return to the main menu.\n")
 
     try:
         while True:
             audio = bytearray()
-            ser.write(b'D')                 # Set STM to distance Mode  
+            ser.write(b'D')                 # Set STM to distance mode
+            ser.write(bytes([threshold]))   # Send threshold (1 byte, 1-255 cm)
             print("Waiting for trigger")
 
             # When something is detected
@@ -159,7 +183,7 @@ print_help()
 
 try:
     while True:
-        mode = input("Select Mode (manual / distance / help / quit)").strip().lower()
+        mode = input("Select Mode (manual / distance / help / quit): ").strip().lower()
 
         if mode == "quit":
             print("Goodbye")
