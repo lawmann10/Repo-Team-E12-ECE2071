@@ -22,7 +22,7 @@ while time.time() - start < recordingTime: #allows us to read byte by byte, comp
         print(sample[0])
         audio.append(sample[0])
        
-
+       
 data = np.array(audio)
 data = (data - data.min()) #removes DC offset
 if data.max() > 0:  #stop zero division
