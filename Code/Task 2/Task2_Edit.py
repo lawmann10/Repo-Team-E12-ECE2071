@@ -82,13 +82,13 @@ def manual_mode():
     output_types = get_output_types()
 
     # Tell STM it is in Manual and give time for switch
-    
-    #ser.write(b'M')
+    ser.reset_input_buffer()
+    ser.write(b'M')
     time.sleep(0.1)
 
     print(f"\n Recording for {recording_time}s")
     audio = bytearray()
-    ser.reset_input_buffer()
+    start = time.time()
 
     start = time.time() #records start time,
     while time.time() - start < recording_time: #allows us to read byte by byte, compared to ser.read which does it all at once

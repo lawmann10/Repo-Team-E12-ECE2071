@@ -48,7 +48,7 @@ UART_HandleTypeDef huart1;
 UART_HandleTypeDef huart2;
 
 /* USER CODE BEGIN PV */
-static uint8_t mode = 'M';                // 0 = Waiting, M = Manual, D = Distance
+static uint8_t mode = '0';                // 0 = Waiting, M = Manual, D = Distance
 static uint8_t is_recording = 0;        // Only required for distance
 
 static uint8_t buf[3] = {128, 128, 0};  // Moving Average Filter (Taken from Task 1)
