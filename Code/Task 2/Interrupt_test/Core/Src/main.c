@@ -57,51 +57,81 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
   */
 int main(void)
 {
+
+  /* USER CODE BEGIN 1 */
+
+  /* USER CODE END 1 */
+
+  /* MCU Configuration--------------------------------------------------------*/
+
+  /* Reset of all peripherals, Initializes the Flash interface and the Systick. */
   HAL_Init();
+
+  /* USER CODE BEGIN Init */
+
+  /* USER CODE END Init */
+
+  /* Configure the system clock */
   SystemClock_Config();
+
+  /* USER CODE BEGIN SysInit */
+
+  /* USER CODE END SysInit */
+
+  /* Initialize all configured peripherals */
   MX_GPIO_Init();
-  MX_USART2_UART_Init(); // This is the most important one for now
-
+  MX_TIM16_Init();
+  MX_USART1_UART_Init();
+  MX_USART2_UART_Init();
   /* USER CODE BEGIN 2 */
-  // 1. Send a "Hello" message to prove TX works
-  uint8_t msg[] = "Square One: Type a character!\r\n";
-  HAL_UART_Transmit(&huart2, msg, sizeof(msg)-1, 100);
+// 1. Send the startup message
+uint8_t msg[] = "\r\n--- START ---\r\n";
+HAL_UART_Transmit(&huart2, msg, sizeof(msg)-1, 100);
 
-  // 2. Start the first Interrupt Reception
-  HAL_UART_Receive_IT(&huart2, &rx_byte, 1);
+// 2. WAIT 200ms to let the line settle
+HAL_Delay(200);
+
+// 3. Clear hardware noise before starting
+__HAL_UART_CLEAR_FLAG(&huart2, UART_FLAG_ORE | UART_FLAG_NE | UART_FLAG_FE);
+
+// 4. Start the Interrupt listener
+HAL_UART_Receive_IT(&huart2, &rx_byte, 1);
   /* USER CODE END 2 */
 
+  /* Infinite loop */
+  /* USER CODE BEGIN WHILE */
   while (1)
   {
-    // Check if the interrupt flag was set
+    // 1. Check if a character was received via Interrupt
     if (rx_flag)
     {
-        rx_flag = 0; // Clear the flag
+        rx_flag = 0; // Reset the flag
 
-        // ECHO: Send back what we received inside brackets
-        uint8_t echo_prefix[] = "I heard: [";
-        uint8_t echo_suffix[] = "]\r\n";
-        
-        HAL_UART_Transmit(&huart2, echo_prefix, sizeof(echo_prefix)-1, 10);
+        // Echo strictly back: just the character
+        HAL_UART_Transmit(&huart2, (uint8_t*)"Recv: ", 6, 10);
         HAL_UART_Transmit(&huart2, &rx_byte, 1, 10);
-        HAL_UART_Transmit(&huart2, echo_suffix, sizeof(echo_suffix)-1, 10);
+        HAL_UART_Transmit(&huart2, (uint8_t*)"\r\n", 2, 10);
 
-        // Logic test: If you type 'M', do something special
+        // Logic check: If you type 'M', do something
         if (rx_byte == 'M') {
-            uint8_t m_msg[] = "Mode M Activated!\r\n";
+            uint8_t m_msg[] = "MODE M ACTIVE\r\n";
             HAL_UART_Transmit(&huart2, m_msg, sizeof(m_msg)-1, 10);
         }
 
-        // 3. IMPORTANT: Re-enable the interrupt for the NEXT character
+        // 2. RE-ENABLE the interrupt for the next character
         HAL_UART_Receive_IT(&huart2, &rx_byte, 1);
     }
 
-    // Safety: If the UART locks up due to noise, clear it
+    // 3. SAFETY: If the UART locks up due to noise (Overrun Error), clear it
     if (__HAL_UART_GET_FLAG(&huart2, UART_FLAG_ORE)) {
         __HAL_UART_CLEAR_FLAG(&huart2, UART_CLEAR_OREF);
         HAL_UART_Receive_IT(&huart2, &rx_byte, 1);
     }
+    /* USER CODE END WHILE */
+
+    /* USER CODE BEGIN 3 */
   }
+  /* USER CODE END 3 */
 }
 
 /**
@@ -126,8 +156,14 @@ void SystemClock_Config(void)
   RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_MSI;
   RCC_OscInitStruct.MSIState = RCC_MSI_ON;
   RCC_OscInitStruct.MSICalibrationValue = 0;
-  RCC_OscInitStruct.MSIClockRange = RCC_MSIRANGE_10;
-  RCC_OscInitStruct.PLL.PLLState = RCC_PLL_NONE;
+  RCC_OscInitStruct.MSIClockRange = RCC_MSIRANGE_6;
+  RCC_OscInitStruct.PLL.PLLState = RCC_PLL_ON;
+  RCC_OscInitStruct.PLL.PLLSource = RCC_PLLSOURCE_MSI;
+  RCC_OscInitStruct.PLL.PLLM = 1;
+  RCC_OscInitStruct.PLL.PLLN = 40;
+  RCC_OscInitStruct.PLL.PLLP = RCC_PLLP_DIV7;
+  RCC_OscInitStruct.PLL.PLLQ = RCC_PLLQ_DIV2;
+  RCC_OscInitStruct.PLL.PLLR = RCC_PLLR_DIV2;
   if (HAL_RCC_OscConfig(&RCC_OscInitStruct) != HAL_OK)
   {
     Error_Handler();
@@ -137,12 +173,12 @@ void SystemClock_Config(void)
   */
   RCC_ClkInitStruct.ClockType = RCC_CLOCKTYPE_HCLK|RCC_CLOCKTYPE_SYSCLK
                               |RCC_CLOCKTYPE_PCLK1|RCC_CLOCKTYPE_PCLK2;
-  RCC_ClkInitStruct.SYSCLKSource = RCC_SYSCLKSOURCE_MSI;
+  RCC_ClkInitStruct.SYSCLKSource = RCC_SYSCLKSOURCE_PLLCLK;
   RCC_ClkInitStruct.AHBCLKDivider = RCC_SYSCLK_DIV1;
   RCC_ClkInitStruct.APB1CLKDivider = RCC_HCLK_DIV1;
   RCC_ClkInitStruct.APB2CLKDivider = RCC_HCLK_DIV1;
 
-  if (HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_1) != HAL_OK)
+  if (HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_4) != HAL_OK)
   {
     Error_Handler();
   }
