@@ -1,4 +1,4 @@
-import numpy as np
+﻿import numpy as np
 import wave
 import serial
 import matplotlib.pyplot as plt
