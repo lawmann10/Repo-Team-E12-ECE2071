@@ -7,7 +7,7 @@ import time
 # COM = "COM6"
 COM = "/dev/tty.usbmodem103"
 baudrate = 115200
-SAMPLE_RATE = 10000  
+SAMPLE_RATE = 9708
 Team_ID = "E12"
 
 ser = serial.Serial(COM, baudrate, timeout=1)
@@ -82,17 +82,19 @@ def manual_mode():
     output_types = get_output_types()
 
     # Tell STM it is in Manual and give time for switch
-    ser.write(b'M')
+    
+    #ser.write(b'M')
     time.sleep(0.1)
 
     print(f"\n Recording for {recording_time}s")
     audio = bytearray()
-    start = time.time()
+    ser.reset_input_buffer()
 
-    while time.time() - start < recording_time:
-        chunk = ser.read(ser.in_waiting or 1)
-        if chunk:
-            audio.extend(chunk)
+    start = time.time() #records start time,
+    while time.time() - start < recording_time: #allows us to read byte by byte, compared to ser.read which does it all at once
+        sample = ser.read(1)
+        if len(sample)>0:
+            audio.append(sample[0])
 
     """ Uncomment if we want to add stop byte stuff to stop the STM from clogging up otherwise we have to reset the STM for each recording"""
     ser.write(b'S')

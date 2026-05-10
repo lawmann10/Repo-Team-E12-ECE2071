@@ -48,7 +48,7 @@ UART_HandleTypeDef huart1;
 UART_HandleTypeDef huart2;
 
 /* USER CODE BEGIN PV */
-static uint8_t mode = 0;                // 0 = Waiting, M = Manual, D = Distance
+static uint8_t mode = 'M';                // 0 = Waiting, M = Manual, D = Distance
 static uint8_t is_recording = 0;        // Only required for distance
 
 static uint8_t buf[3] = {128, 128, 0};  // Moving Average Filter (Taken from Task 1)
@@ -116,7 +116,7 @@ int main(void)
         uint8_t cmd = 0;
 
         // Every 100ms tries to receive mode command
-        if (HAL_UART_Receive(&huart2, &cmd, 1, 100) == HAL_OK){
+        if (HAL_UART_Receive(&huart2, &cmd, 1, 5000) == HAL_OK){
             // Once command has been found
             if (cmd == 'M' || cmd == 'D'){
                 // Reset to defaults at start of new recording
