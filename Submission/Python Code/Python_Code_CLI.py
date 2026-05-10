@@ -55,7 +55,7 @@ def audio_fix(raw_bytes):
 
     # Scale to 16-bit for wav file by shifting left by 4
     scaled_audio = centered_audio << 4
-
+    
     return raw_audio, scaled_audio
 
 def save_files(output_types, raw_data, scaled_data):
