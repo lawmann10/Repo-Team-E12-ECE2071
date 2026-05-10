@@ -24,6 +24,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <math.h>
+
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -48,7 +49,7 @@ UART_HandleTypeDef huart1;
 UART_HandleTypeDef huart2;
 
 /* USER CODE BEGIN PV */
-static uint8_t mode = '0';                // 0 = Waiting, M = Manual, D = Distance
+static uint8_t mode = 0;                // 0 = Waiting, M = Manual, D = Distance
 static uint8_t is_recording = 0;        // Only required for distance
 
 static uint8_t buf[3] = {128, 128, 0};  // Moving Average Filter (Taken from Task 1)
@@ -108,6 +109,8 @@ int main(void)
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
+ 
+
   while (1)
   {
 
@@ -116,7 +119,7 @@ int main(void)
         uint8_t cmd = 0;
 
         // Every 100ms tries to receive mode command
-        if (HAL_UART_Receive(&huart2, &cmd, 1, 5000) == HAL_OK){
+        if (HAL_UART_Receive(&huart2, &cmd, 1, 100) == HAL_OK){
             // Once command has been found
             if (cmd == 'M' || cmd == 'D'){
                 // Reset to defaults at start of new recording
@@ -219,9 +222,9 @@ int main(void)
       // OBJECT REMOVED: Flip the switch to OFF only after it clears 15cm
       is_recording = 0;
 
-      // Send stop byte to python
-      uint8_t stop_byte = 0xFF;
-      HAL_UART_Transmit(&huart2, &stop_byte, 1, HAL_MAX_DELAY); // if we were recording, and move to far, send stop byte
+      // Send stop sequence to python (0xFF 0xFF = end of recording)
+      uint8_t stop_seq[] = {0xFF, 0xFF};
+      HAL_UART_Transmit(&huart2, stop_seq, 2, HAL_MAX_DELAY);
   }
 
   /* Transfer audio if within range */
@@ -235,8 +238,13 @@ int main(void)
         buf[1] = buf[2];
         mean = (buf[0] + buf[1]) / 2;
 
-          // Forward to Python (USART2)
-          HAL_UART_Transmit(&huart2, &mean, 1, HAL_MAX_DELAY);
+          // Forward to Python (USART2), escape 0xFF to avoid collision with stop sequence
+          if (mean == 0xFF) {
+              uint8_t escaped[] = {0xFF, 0x00};
+              HAL_UART_Transmit(&huart2, escaped, 2, HAL_MAX_DELAY);
+          } else {
+              HAL_UART_Transmit(&huart2, &mean, 1, HAL_MAX_DELAY);
+          }
       }
       // No Delay here: Maintain high sample rate!
   } 
@@ -245,8 +253,6 @@ int main(void)
     /* Wait 60ms between readings */
     HAL_Delay(60); //once stop byte sent, we go back to sampling every 60ms
   }
-    
-}
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
