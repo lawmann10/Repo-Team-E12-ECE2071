@@ -1,0 +1,6 @@
+/Users/lawmann10/Documents/Monash University/ECE2071 Systems Programming/Repo-Team-E12-ECE2071/Lawson experimenting here/new_processing/build/Debug/CMakeFiles/new_processing.dir
+/Users/lawmann10/Documents/Monash University/ECE2071 Systems Programming/Repo-Team-E12-ECE2071/Lawson experimenting here/new_processing/build/Debug/CMakeFiles/edit_cache.dir
+/Users/lawmann10/Documents/Monash University/ECE2071 Systems Programming/Repo-Team-E12-ECE2071/Lawson experimenting here/new_processing/build/Debug/CMakeFiles/rebuild_cache.dir
+/Users/lawmann10/Documents/Monash University/ECE2071 Systems Programming/Repo-Team-E12-ECE2071/Lawson experimenting here/new_processing/build/Debug/cmake/stm32cubemx/CMakeFiles/STM32_Drivers.dir
+/Users/lawmann10/Documents/Monash University/ECE2071 Systems Programming/Repo-Team-E12-ECE2071/Lawson experimenting here/new_processing/build/Debug/cmake/stm32cubemx/CMakeFiles/edit_cache.dir
+/Users/lawmann10/Documents/Monash University/ECE2071 Systems Programming/Repo-Team-E12-ECE2071/Lawson experimenting here/new_processing/build/Debug/cmake/stm32cubemx/CMakeFiles/rebuild_cache.dir

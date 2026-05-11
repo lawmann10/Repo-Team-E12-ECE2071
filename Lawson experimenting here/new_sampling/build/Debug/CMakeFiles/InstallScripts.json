@@ -1,0 +1,8 @@
+{
+	"InstallScripts" : 
+	[
+		"/Users/lawmann10/Documents/Monash University/ECE2071 Systems Programming/Repo-Team-E12-ECE2071/Lawson experimenting here/new_sampling/build/Debug/cmake_install.cmake",
+		"/Users/lawmann10/Documents/Monash University/ECE2071 Systems Programming/Repo-Team-E12-ECE2071/Lawson experimenting here/new_sampling/build/Debug/cmake/stm32cubemx/cmake_install.cmake"
+	],
+	"Parallel" : false
+}
