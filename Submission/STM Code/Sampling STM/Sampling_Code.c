@@ -72,15 +72,17 @@ static void SPI1_WriteByte(uint16_t tx_byte){
     LL_SPI_ClearFlag_OVR(SPI1);
 }
 
+// From Week 7 Task 2 Page 45
+// Runs everytime the ADC has a value ready, it then sends the value out via SPI
 void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef *hadc){
     if (hadc->Instance == ADC1){
         // Toggle Pin for timing
-        HAL_GPIO_WritePin(Output_GPIO_Port, Output_Pin, 1);
+        HAL_GPIO_WritePin(Output_GPIO_Port, Output_Pin, 1);           // Writes high (for debugging)
 
         uint16_t sampled_value = (uint16_t)HAL_ADC_GetValue(&hadc1);
         SPI1_WriteByte(sampled_value);
 
-        HAL_GPIO_WritePin(Output_GPIO_Port, Output_Pin, 0);
+        HAL_GPIO_WritePin(Output_GPIO_Port, Output_Pin, 0);           // Writes low (for debugging)
     }
 }
 
