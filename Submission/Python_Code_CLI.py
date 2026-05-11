@@ -5,8 +5,8 @@ import matplotlib.pyplot as plt
 import time
 from pathlib import Path
 
-# COM = "COM6"
-COM = "/dev/tty.usbmodem103"
+""" Remember to change to the computers COM port"""
+COM = "COM8"
 baudrate = 921600               # Highest allowed rate
 SAMPLE_RATE = 44100             # Changed to hold the higher sampling rate of to hold 44.1kspsp 
 Team_ID = "E12"
@@ -15,7 +15,12 @@ Path("./outputs").mkdir(parents=True, exist_ok=True)
 
 ser = serial.Serial(COM, baudrate, timeout=1)
 
-def save_wav(data, filename): #function to save wav  
+def save_wav(data, filename): #function to save wav
+        """ 
+        Takes the scaled data (16-bit) and the set filename
+        Creates a wav file 
+        Saves in outputs folder
+        """  
         # Data needs to be centered and bit shifted to 16-bit      
         with wave.open(f"./outputs/{filename}", 'wb') as wf:
             wf.setnchannels(1)
@@ -25,6 +30,11 @@ def save_wav(data, filename): #function to save wav
         print(f"Saved: {filename}")
 
 def save_png(data, filename, length): #function to save png
+    """
+    Takes the raw data, filename and the actual recording length
+    Creates a png based on the amplitude of the data and the recording length
+    Saves in outputs folder
+    """
     time_axis = np.linspace(0, length, len(data))
     plt.figure()
     plt.plot(time_axis, data)
@@ -37,12 +47,18 @@ def save_png(data, filename, length): #function to save png
     print(f"Saved: {filename}")
 
 def save_csv(data, filename): #function to save csv
+    """
+    Takes the raw data, and filename
+    Creates a csv file with the first row holding the sample rate
+    Saves in outputs folder
+    """
     output_path = f"./outputs/{filename}"
     np.savetxt(output_path, data, delimiter=",", header =f"Sample Rate: {SAMPLE_RATE}", fmt="%d")
     print(f"Saved: {filename}")
 
 def audio_fix(raw_bytes):
     """
+    Takes the raw audio
     Converts bytes, centres around mean, and provides scaling for wav file    
     """
 
@@ -51,10 +67,10 @@ def audio_fix(raw_bytes):
 
     # Centre the audio
     mean_val = np.mean(raw_audio)
-    centered_audio = raw_audio.astype(np.uint32) - int(mean_val)
+    centered_audio = raw_audio - int(mean_val)
 
     # Scale to 16-bit for wav file by shifting left by 4
-    scaled_audio = centered_audio << 4
+    scaled_audio = centered_audio  << 4
     
     return raw_audio, scaled_audio
 
@@ -142,7 +158,7 @@ def distance_mode():
     for _ in range(10):
         ser.write(bytes([1, dist]))
 
-    raw_buffer = bytearray()
+    raw_buffer = bytearray()    
     print("Collecting Data (Press Ctrl+C to stop)")
 
     try:
