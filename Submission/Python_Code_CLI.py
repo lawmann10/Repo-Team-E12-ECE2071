@@ -61,6 +61,9 @@ def audio_fix(raw_bytes):
     Takes the raw audio
     Converts bytes, centres around mean, and provides scaling for wav file    
     """
+    # Trim to even number of bytes so frombuffer can parse uint16 correctly
+    if len(raw_bytes) % 2 != 0:
+        raw_bytes = raw_bytes[:-1]
 
     # Convert to 16-bit using Big Endian
     raw_audio = np.frombuffer(raw_bytes, dtype='>u2').astype(np.uint16)
